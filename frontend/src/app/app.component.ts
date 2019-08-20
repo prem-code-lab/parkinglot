@@ -1,4 +1,4 @@
-import { Component } from "@angular/core";
+import { Component, ChangeDetectorRef } from "@angular/core";
 import {
   FormGroup,
   FormControl,
@@ -20,20 +20,12 @@ export class AppComponent {
   error_message = "Vehicle already parked";
   parkings = new Array<ParkingLot>();
   vehicleForm: FormGroup;
-  constructor(private pService: ParkingServiceService) {
-    pService.getAllParking().subscribe(response => {
-      this.parkings = response.map(item => {
-        return new ParkingLot(
-          item.id,
-          item.lot,
-          item.vehicle_number,
-          item.parking_duration,
-          item.parking_amount
-        );
-      });
-    });
-  }
+  constructor(
+    private pService: ParkingServiceService,
+    private changeDetectorRef: ChangeDetectorRef
+  ) {}
   ngOnInit() {
+    this.refresh();
     this.vehicleForm = new FormGroup({
       lot: new FormControl(""),
       vehicle_number: new FormControl(""),
@@ -52,6 +44,7 @@ export class AppComponent {
     this.pService.parkNewvehicle(pl).subscribe(
       data => {
         console.log("POST Request is successful ", data);
+        this.refresh();
       },
       error => {
         this.errorAlert = true;
@@ -60,6 +53,21 @@ export class AppComponent {
     );
     this.errorAlert = this.pService.errorAlert;
     console.log(this.errorAlert);
+  }
+
+  refresh() {
+    this.pService.getAllParking().subscribe(response => {
+      this.parkings = response.map(item => {
+        return new ParkingLot(
+          item.id,
+          item.lot,
+          item.vehicle_number,
+          item.parking_duration,
+          item.parking_amount
+        );
+      });
+      this.changeDetectorRef.detectChanges();
+    });
   }
   calculateAmount(event) {
     let ts = this.vehicleForm.get("parking_duration").value;
